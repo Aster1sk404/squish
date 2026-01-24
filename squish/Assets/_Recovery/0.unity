@@ -1017,13 +1017,12 @@ MonoBehaviour:
     m_Bits: 8
   defGravity: 1
   fallGravity: 2
-  slideGravity: 0.1
+  slideGravity: 0.3
   jumpForce: 5
   defJumpsLeft: 2
   jumpsLeft: 0
-  speed: 1
-  maxSpeed: 5
-  wallForce: 10
+  speed: 5
+  wallForce: 4
   jumpClicked: 0
   horMove: 0
   startTime: 0

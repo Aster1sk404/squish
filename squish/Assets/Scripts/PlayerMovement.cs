@@ -5,135 +5,124 @@ using System;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using Unity.Android.Gradle.Manifest;
+using Unity.VisualScripting;
 
 public class PlayerMovement : MonoBehaviour
 {
     private Rigidbody2D rb;
-    [SerializeField] private float defGravity = 1;
-    [SerializeField] private float fallGravity = 2;
-    [SerializeField] private float slideGravity = 0.3f;
-    [SerializeField] private float jumpForce = 100;
-    [SerializeField] private float speed = 5;
-    [SerializeField] private float wallForce = 70;
+    [SerializeField] private InputActionAsset inputAsset;
+    private InputAction jumpAction;
+    private InputAction moveAction;
+    
     [SerializeField] private Transform DLCheck;
     [SerializeField] private Transform DRCheck;
     [SerializeField] private Transform TLCheck;
     [SerializeField] private Transform TRCheck;
-    private enum PlayerState {
-        jumping,
-        falling,
-        walled,
-        grounded
-        };
-    private enum CheckState
-    {
-        lWalled,
-        rWalled,
-        grounded,
-        aired
-    }
-    [SerializeField] private PlayerState ps = PlayerState.falling;
-    [SerializeField] private CheckState cs;
 
+    //STATES
+    private State GroundState;
+    private State AirState;
+    private State FallState;
+    private State RWallState;
+    private State LWallState;
+    private State state;
 
-    void Start()
+    void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        GroundState = GetComponent<GroundState>();
+        AirState = GetComponent<AirState>();
+        FallState = GetComponent<FallState>();
+        RWallState = GetComponent<RWallState>();
+        LWallState = GetComponent<LWallState>();
+
+        SwitchState(GroundState);
+    }
+
+    void Update()
+    {
+        state.Do();
+
+        if (state.isComplete)
+        {
+            SelectState();
+        }
     }
 
     void FixedUpdate()
     {
-        switch (ps)
-        {
-            case PlayerState.jumping:
-                JumpState();
-                break;
-            case PlayerState.falling:
-                FallState();
-                break;
-            case PlayerState.walled:
-                WallState();
-                break;
-            case PlayerState.grounded:
-                GroundState();
-                break;
-        }
+        state.FixedDo();
     }
 
-    IEnumerator JumpState()
+    void SwitchState(State newState)
     {
-        //ACTION
-        rb.linearVelocityY -= defGravity;
+        if (state != null)
+            state.Exit();
 
-        //PASSING
-        if (rb.linearVelocityY < 0)
-            ps = PlayerState.falling;   //TO FALLSTATE
-        else if (GroundCheck() == CheckState.lWalled || GroundCheck() == CheckState.rWalled)
-            ps = PlayerState.walled;    //TO WALLSTATE
-        yield return 0;
+        state = newState;
+        state.isComplete = false;
+        state.Enter();
+        state.isComplete = false;
     }
-    IEnumerator FallState()
+    void SelectState()
     {
-        //ACTION
-        rb.linearVelocityY -= fallGravity;
-
-        //PASSING
-        if (GroundCheck() == CheckState.grounded)
-            ps = PlayerState.grounded;  //TO GROUNDSTATE
-        else if (GroundCheck() == CheckState.lWalled || GroundCheck() == CheckState.rWalled)
-            ps = PlayerState.walled;    //TO WALLSTATE
-        yield return 0;
-    }
-    IEnumerator WallState()
-    {
-        //ACTION
-        rb.linearVelocityY -= slideGravity;
-        if (Keyboard.current.spaceKey.wasPressedThisFrame)
-        {
-            if (GroundCheck() == CheckState.lWalled)
-                rb.linearVelocityX = wallForce;
-            else if (GroundCheck() == CheckState.rWalled)
-                rb.linearVelocityX = -wallForce;
-            Jump(); //TO JUMPSTATE
-        }
-
-        //PASSING
-        yield return 0;
-    }
-    IEnumerator GroundState()
-    {
-        //ACTION
-        if (Keyboard.current.spaceKey.wasPressedThisFrame)
-            Jump(); //TO JUMPSTATE
-        
-        //PASSING
-        if (GroundCheck() == CheckState.aired)
-            ps = PlayerState.falling;   //TO FALLSTATE
-        yield return 0;
-    }
-
-    CheckState GroundCheck()
-    {
-        bool tl = Physics2D.OverlapCircle(TLCheck.position, 0.3f);
-        bool tr = Physics2D.OverlapCircle(TRCheck.position, 0.3f);
-        bool dl = Physics2D.OverlapCircle(DLCheck.position, 0.3f);
-        bool dr = Physics2D.OverlapCircle(DRCheck.position, 0.3f);
-
-        if (dl || dr)
-            return CheckState.grounded;
-        else if (tl && dl)
-            return CheckState.lWalled;
-        else if (tr && dr)
-            return CheckState.rWalled;
+        if (IsGrounded())
+            SwitchState(GroundState);
+        else if (IsRWalled())
+            SwitchState(RWallState);
+        else if (IsLWalled())
+            SwitchState(LWallState);
+        else if (rb.linearVelocityY >= 0)
+            SwitchState(AirState);
         else
-            return CheckState.aired;
+            SwitchState(FallState);
     }
-
-
-    IEnumerator Jump()
+    public bool IsGrounded()
     {
-        rb.linearVelocityY = jumpForce;
-        ps = PlayerState.jumping;
-        yield return 0;
+        bool dl = Physics2D.OverlapCircle(DLCheck.position , 0.3f);
+        bool dr = Physics2D.OverlapCircle(DRCheck.position , 0.3f);
+        bool tl = Physics2D.OverlapCircle(TLCheck.position , 0.3f);
+        bool tr = Physics2D.OverlapCircle(TRCheck.position , 0.3f);
+
+        if ((dr || dl) && !(tl || tr))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    public bool IsRWalled()
+    {
+        bool dl = Physics2D.OverlapCircle(DLCheck.position , 0.3f);
+        bool dr = Physics2D.OverlapCircle(DRCheck.position , 0.3f);
+        bool tl = Physics2D.OverlapCircle(TLCheck.position , 0.3f);
+        bool tr = Physics2D.OverlapCircle(TRCheck.position , 0.3f);
+
+        if ((dr || tr) && !(dl || tl))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    public bool IsLWalled()
+    {
+        bool dl = Physics2D.OverlapCircle(DLCheck.position , 0.3f);
+        bool dr = Physics2D.OverlapCircle(DRCheck.position , 0.3f);
+        bool tl = Physics2D.OverlapCircle(TLCheck.position , 0.3f);
+        bool tr = Physics2D.OverlapCircle(TRCheck.position , 0.3f);
+
+        if ((dl || tl) && !(dr || tr))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 }
