@@ -3,6 +3,8 @@ using UnityEngine.InputSystem;
 using System;
 using Unity.VisualScripting;
 using System.Collections;
+using UnityEngine.Tilemaps;
+using UnityEngine.Rendering;
 
 public class CharacterController2D : MonoBehaviour
 {
@@ -11,30 +13,34 @@ public class CharacterController2D : MonoBehaviour
     private InputAction jumpAction;
     private InputAction moveAction;
 	protected PlayerMovement player;
-    public float defGravity = 1;
-    public float fallGravity = 2;
-    public float slideGravity = 0.3f;
-    public float jumpForce = 100;
-    public int defJumpsLeft = 2;
-    public int jumpsLeft;
-    public float speed = 2;
-    public float maxSpeed = 10;
-    public float wallForce = 70;
+    public float defGravity = 1, fallGravity = 2, slideGravity = 0.3f;
+    public float jumpForce = 100, wallForce = 70;
+    public float minVelAnim = 0.2f;
+    public float minScale = 0.8f, maxScale = 1.25f;
+    public int defJumpsLeft = 2, jumpsLeft;
+    public float speed = 2, maxSpeed = 10;
 	public bool jumpClicked;
-	public float horMove;
+    public float horMove;
 	public float startTime;
+    public float prevVelX, prevVelY;
 	public Rigidbody2D rb;
+    public SpriteRenderer sr;
+    public ParticleSystem ps;
+    public float transition = 0.2f;
     public bool isComplete = false;
 	public float jumpBuffer = 0.2f;
     public float time => Time.time - startTime;
     [SerializeField] private Transform DLCheck, DRCheck, TLCheck, TRCheck;
 	[SerializeField] private float checkRadius = 0.05f;
 	public StateSystem pl;
+    Keyboard key;
 
 	void Awake()
 	{
 		rb = GetComponent<Rigidbody2D>();
         rb.gravityScale = defGravity;
+        sr = GetComponent<SpriteRenderer>();
+        ps = GetComponent<ParticleSystem>();
 		/*DLCheck = transform.Find("DLCheck");
 		DRCheck = transform.Find("DRCheck");
 		TLCheck = transform.Find("TLCheck");
@@ -43,10 +49,13 @@ public class CharacterController2D : MonoBehaviour
 
     void Update()
     {
-		Keyboard key = Keyboard.current;
+        prevVelX = rb.linearVelocityX;
+        prevVelY = rb.linearVelocityY;
+		key = Keyboard.current;
 		if (key.spaceKey.wasPressedThisFrame)
         {
             StartCoroutine(JumpBuffer());
+            jumpsLeft--;
         }
 			
         horMove = Convert.ToInt32(key.dKey.isPressed) - Convert.ToInt32(key.aKey.isPressed);
@@ -58,7 +67,8 @@ public class CharacterController2D : MonoBehaviour
         pl.FixedDoState();
     }
 
-	IEnumerator JumpBuffer()
+
+    IEnumerator JumpBuffer()
 	{
         jumpClicked = true;
 		yield return new WaitForSeconds(jumpBuffer);
@@ -68,21 +78,22 @@ public class CharacterController2D : MonoBehaviour
 	public void Move()
     {
         if (horMove != 0)
-            if (rb.linearVelocityX <= maxSpeed && rb.linearVelocityX >= -maxSpeed)
-                rb.linearVelocityX += speed * horMove;
-            else if (rb.linearVelocityX > maxSpeed)
-                rb.linearVelocityX = maxSpeed;
-            if (rb.linearVelocityX < -maxSpeed)
-                rb.linearVelocityX = -maxSpeed;
+        {
+            rb.linearVelocityX = Mathf.Clamp(rb.linearVelocityX, -maxSpeed, maxSpeed);
+            rb.linearVelocityX += speed * horMove;
+        }
 		Debug.Log("Moving! Direction: " + horMove);
         
     }
     public void Jump(float dir = 0)
     {
 		Debug.Log("Jump Called! Direction: " + dir);
-        rb.linearVelocityY = jumpForce;
-        if (dir != 0)
-            WallJump(dir);
+        if (jumpsLeft > 0)
+        {
+            rb.linearVelocityY = jumpForce;
+            if (dir != 0)
+                WallJump(dir);
+        }
     }
 
     void WallJump(float dir)
@@ -90,6 +101,10 @@ public class CharacterController2D : MonoBehaviour
         rb.linearVelocityX = dir * wallForce;
     }
     
+    public float Map(float old_value, float old_min, float old_max, float new_min, float new_max)
+    {
+        return (old_value - old_min) * (new_max - new_min) / (old_max - old_min) + new_min;
+    }
 	public bool IsGrounded()
     {
         bool dr = Physics2D.OverlapCircle(DRCheck.position , checkRadius, groundLayer) != null;

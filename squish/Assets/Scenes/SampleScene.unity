@@ -709,7 +709,7 @@ Transform:
   m_GameObject: {fileID: 1038696337}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.5, y: 0.5, z: 0}
+  m_LocalPosition: {x: 0.5, y: -0.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -771,7 +771,7 @@ Transform:
   m_GameObject: {fileID: 1630970104}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.5, z: 0}
+  m_LocalPosition: {x: 0, y: -0.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1017,17 +1017,25 @@ MonoBehaviour:
     m_Bits: 8
   defGravity: 1
   fallGravity: 2
-  slideGravity: 0.1
+  slideGravity: 0.3
   jumpForce: 5
+  wallForce: 10
+  minVelAnim: 0.2
+  minScale: 0.8
+  maxScale: 1.25
   defJumpsLeft: 2
   jumpsLeft: 0
   speed: 1
   maxSpeed: 5
-  wallForce: 10
   jumpClicked: 0
   horMove: 0
   startTime: 0
+  prevVelX: 0
+  prevVelY: 0
   rb: {fileID: 1633904908}
+  sr: {fileID: 0}
+  ps: {fileID: 0}
+  transition: 0.2
   isComplete: 0
   jumpBuffer: 0.2
   DLCheck: {fileID: 1339508499}
@@ -1244,7 +1252,7 @@ Transform:
   m_GameObject: {fileID: 2118828787}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.5, y: 0.5, z: 0}
+  m_LocalPosition: {x: -0.5, y: -0.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
