@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 
 public class CharacterController2D : MonoBehaviour
 {
+    public bool dKey, aKey, spaceKey;
     [SerializeField] private InputActionAsset inputAsset;
 	[SerializeField] private LayerMask groundLayer;
     private InputAction jumpAction;
@@ -52,13 +53,13 @@ public class CharacterController2D : MonoBehaviour
         prevVelX = rb.linearVelocityX;
         prevVelY = rb.linearVelocityY;
 		key = Keyboard.current;
-		if (key.spaceKey.wasPressedThisFrame)
+		if (key.spaceKey.wasPressedThisFrame || spaceKey)
         {
             StartCoroutine(JumpBuffer());
             jumpsLeft--;
         }
 			
-        horMove = Convert.ToInt32(key.dKey.isPressed) - Convert.ToInt32(key.aKey.isPressed);
+        horMove = Convert.ToInt32(key.dKey.isPressed || dKey) - Convert.ToInt32(key.aKey.isPressed || aKey);
         pl.DoState();
     }
 
